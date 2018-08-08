@@ -1,9 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
-var expressValidator = require('express-validator');
-var { check, body } = require('express-validator/check');
+var { check } = require('express-validator/check');
 var validationResult = require('express-validator/check').validationResult;
 
 const User = require("./../models/user");
@@ -50,6 +48,40 @@ router.post("/signup", [
         }
     });
 });
+
+router.post("/login", (req, res, next) => {
+    User.findOne({ email: req.body.email })
+        .then(user => {
+            if (user) {
+                bcrypt.compare(req.body.password, user.password, (err, result) => {
+                    console.log("result:", result)
+                    if (err) {
+                        res.status(401).json({
+                            message: "Auth failed"
+                        })
+                    }
+                    if (result) {
+                        res.status(200).json({
+                            message: "Auth successful"
+                        })
+                    } else {
+                        res.status(401).json({
+                            message: "Password is wrong"
+                        })
+                    }
+                })
+            } else {
+                res.status(401).json({
+                    message: "User doesn't exist"
+                }) 
+            }
+        })
+        .catch(err => {
+            res.status(500).json({
+                error: err
+            });
+        })
+})
 
 router.delete("/:userId", (req, res, next) => {
     User.remove({ _id: req.params.userId })
