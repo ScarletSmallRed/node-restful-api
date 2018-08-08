@@ -1,8 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcrypt");
-var { check } = require('express-validator/check');
-var validationResult = require('express-validator/check').validationResult;
+const { check } = require('express-validator/check');
+const validationResult = require('express-validator/check').validationResult;
+const jwt = require("jsonwebtoken");
 
 const User = require("./../models/user");
 
@@ -61,8 +62,18 @@ router.post("/login", (req, res, next) => {
                         })
                     }
                     if (result) {
+                        const token = jwt.sign(
+                            {
+                                email: user.email,
+                            },
+                            process.env.JWT_KEY,
+                            {
+                                expiresIn: "10"
+                            }
+                        );
                         res.status(200).json({
-                            message: "Auth successful"
+                            message: "Auth successful",
+                            token
                         })
                     } else {
                         res.status(401).json({
@@ -73,7 +84,7 @@ router.post("/login", (req, res, next) => {
             } else {
                 res.status(401).json({
                     message: "User doesn't exist"
-                }) 
+                })
             }
         })
         .catch(err => {
