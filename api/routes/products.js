@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const Product = require('./../models/product');
 const multer = require('multer');
 const checkAuth = require('./../middlewares/check-auth')
+const productsController = require("./../controllers/products")
 
 const storage = multer.diskStorage({
     destination: function(req, file, cb) {
@@ -30,87 +30,14 @@ const storage = multer.diskStorage({
     fileFilter: fileFilter
   });
 
-router.get('/', (req, res, next) => {
-    Product.find()
-    .select('name price _id productImage')
-    .then(docs => {
-      res.status(200).json(docs);
-    })
-    .catch(err => {
-      res.status(500).json({
-        error: err
-      });
-    });
-});
+router.get('/', productsController.products_get_all);
 
-router.get('/:productId', (req, res, next) => {
-  const id = req.params.productId;
-  Product.findById(id)
-      .select('name price _id productImage')
-      .then(doc => {
-          if (doc) {
-          res.status(200).json(doc);
-          } else {
-          res
-              .status(404)
-              .json({ message: "No valid entry found for provided ID" });
-          }
-      })
-      .catch(err => {
-          res.status(500).json({ error: err });
-      });
-});
+router.get('/:productId', productsController.products_get_product);
 
-router.post('/', checkAuth, upload.single('productImage'), (req, res, next) => {
-    const product = new Product({
-        name: req.body.name,
-        price: req.body.price,
-        productImage: req.file.path
-    })
-    product.save()
-        .then(result => {
-            res.status(201).json({
-                message: "Handling POST requests to /products",
-                createdProduct: result
-              });
-        })
-        .catch(err => {
-            res.status(500).json({
-                error: err
-            });
-        })
-});
+router.post('/', checkAuth, upload.single('productImage'), productsController.products_create_product);
 
-router.patch("/:productId", (req, res, next) => {
-    const id = req.params.productId;
-    const updateOps = {};
-    for (const ops of req.body) {
-      updateOps[ops.propName] = ops.value;
-      console.log('ops.proName:', ops.propName)
-    }
-    Product.update({ _id: id }, { $set: updateOps })
-      .then(result => {
-        console.log(result);
-        res.status(200).json(result);
-      })
-      .catch(err => {
-        res.status(500).json({
-          error: err
-        });
-      });
-  });
+router.patch("/:productId", checkAuth, productsController.products_update_product);
 
-router.delete("/:productId", checkAuth, (req, res, next) => {
-    const id = req.params.productId;
-    Product.remove({ _id: id })
-      .then(result => {
-        res.status(200).json(result);
-      })
-      .catch(err => {
-        res.status(500).json({
-          error: err
-        });
-      });
-  });
+router.delete("/:productId", checkAuth, productsController.products_delete_product);
 
 module.exports = router;
